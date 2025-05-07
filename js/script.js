@@ -1,59 +1,62 @@
-const pokemonName = document.querySelector('.pokemon__name');
-const pokemonNumber = document.querySelector('.pokemon__number');
-const pokemonImage = document.querySelector('.pokemon__image');
-
-const form = document.querySelector('.form');
+const movieTitle = document.querySelector('.movie__title');
+const movieYear = document.querySelector('.movie__year');
+const moviePoster = document.querySelector('.movie__poster');
 const input = document.querySelector('.input__search');
-const buttonPrev = document.querySelector('.btn-prev');
-const buttonNext = document.querySelector('.btn-next');
+const form = document.querySelector('.form');
 
-let searchPokemon = 1;
+const btnPrev = document.querySelector('.btn-prev');
+const btnNext = document.querySelector('.btn-next');
 
-const fetchPokemon = async (pokemon) => {
-  const APIResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon}`);
+const API_KEY = '5c00caca'; // Substitua pela sua chave da API
 
-  if (APIResponse.status === 200) {
-    const data = await APIResponse.json();
-    return data;
-  }
-}
+let movieList = [];
+let currentIndex = 0;
 
-const renderPokemon = async (pokemon) => {
+// Função para buscar filmes da OMDb
+const fetchMovieList = async (searchTerm) => {
+  const res = await fetch(`https://www.omdbapi.com/?s=${encodeURIComponent(searchTerm)}&apikey=${API_KEY}`);
+  const data = await res.json();
 
-  pokemonName.innerHTML = 'Loading...';
-  pokemonNumber.innerHTML = '';
-
-  const data = await fetchPokemon(pokemon);
-
-  if (data) {
-    pokemonImage.style.display = 'block';
-    pokemonName.innerHTML = data.name;
-    pokemonNumber.innerHTML = data.id;
-    pokemonImage.src = data['sprites']['versions']['generation-v']['black-white']['animated']['front_default'];
-    input.value = '';
-    searchPokemon = data.id;
+  if (data.Response === 'True') {
+    movieList = data.Search;
+    currentIndex = 0; // Iniciar a navegação no primeiro filme
+    renderMovie(movieList[currentIndex]); // Exibir o primeiro filme
   } else {
-    pokemonImage.style.display = 'none';
-    pokemonName.innerHTML = 'Not found :c';
-    pokemonNumber.innerHTML = '';
+    movieTitle.textContent = 'Filme não encontrado';
+    movieYear.textContent = '';
+    moviePoster.src = './images/notfound.png';
+    movieList = []; // Limpar lista se não encontrar filmes
   }
-}
+};
 
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
-  renderPokemon(input.value.toLowerCase());
-});
+// Função para renderizar o filme atual
+const renderMovie = (movie) => {
+  movieTitle.textContent = movie.Title;
+  movieYear.textContent = movie.Year;
+  moviePoster.src = movie.Poster !== 'N/A' ? movie.Poster : './images/notfound.png';
+};
 
-buttonPrev.addEventListener('click', () => {
-  if (searchPokemon > 1) {
-    searchPokemon -= 1;
-    renderPokemon(searchPokemon);
+// Navegar para o filme anterior
+btnPrev.addEventListener('click', () => {
+  if (movieList.length > 0 && currentIndex > 0) {
+    currentIndex--; // Desce um índice
+    renderMovie(movieList[currentIndex]); // Exibe o filme correspondente
   }
 });
 
-buttonNext.addEventListener('click', () => {
-  searchPokemon += 1;
-  renderPokemon(searchPokemon);
+// Navegar para o próximo filme
+btnNext.addEventListener('click', () => {
+  if (movieList.length > 0 && currentIndex < movieList.length - 1) {
+    currentIndex++; // Aumenta o índice
+    renderMovie(movieList[currentIndex]); // Exibe o próximo filme
+  }
 });
 
-renderPokemon(searchPokemon);
+// Ao submeter a pesquisa, buscar filmes
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const term = input.value.trim();
+  if (term) {
+    fetchMovieList(term); // Busca os filmes com o termo digitado
+  }
+});
